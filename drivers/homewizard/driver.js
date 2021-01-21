@@ -1,7 +1,8 @@
 'use strict';
 
 const Homey = require('homey');
-const request = require('request');
+//const request = require('request');
+const fetch = require('node-fetch');
 
 var devices = {};
 var homewizard = require('./../../includes/homewizard.js');
@@ -9,7 +10,7 @@ var refreshIntervalId;
 
 class HomeWizardDriver extends Homey.Driver {
     onInit() {
-        this.log('HomeWizard has been inited');
+        console.log('HomeWizard has been inited');
 
         var me = this;
 
@@ -24,12 +25,12 @@ class HomeWizardDriver extends Homey.Driver {
                 return new Promise((resolve, reject) => {
                     homewizard.call(args.device.getData().id, '/get-status/', (err, response) => {
                         if (err) {
-                            this.log('ERR flowCardCondition  -> returned false');
+                            console.log('ERR flowCardCondition  -> returned false');
                             // You can make a choice here: reject the promise with the error,
                             // or resolve it to return "false" return resolve(false); // OR: return reject(err)
                         }
-                        this.log('arg.preset '+ args.preset + ' - hw preset ' +response.preset);
-                        this.log(' flowCardCondition CheckPreset -> returned', (args.preset == response.preset));
+                        console.log('arg.preset '+ args.preset + ' - hw preset ' +response.preset);
+                        console.log(' flowCardCondition CheckPreset -> returned', (args.preset == response.preset));
                         return resolve(args.preset == response.preset);
                     });
                 });
@@ -82,9 +83,9 @@ class HomeWizardDriver extends Homey.Driver {
             })
             .getArgument('scene')
             .registerAutocompleteListener(async (query, args) => {
-                this.log('CALLED flowCardAction switch_scene_on autocomplete');
+                console.log('CALLED flowCardAction switch_scene_on autocomplete');
 
-                return this._onGetSceneAutcomplete(args);
+                return this._onGetSceneAutocomplete(args);
 
 
             });
@@ -100,7 +101,7 @@ class HomeWizardDriver extends Homey.Driver {
                 return new Promise((resolve, reject) => {
                     homewizard.call(args.device.getData().id, '/gp/' + args.scene.id + '/off', function(err, response) {
                         if(err) {
-                            this.log('ERR flowCardAction switch_scene_off  -> returned false');
+                            console.log('ERR flowCardAction switch_scene_off  -> returned false');
                             return resolve(false);
                         }
 
@@ -112,12 +113,12 @@ class HomeWizardDriver extends Homey.Driver {
             })
             .getArgument('scene')
             .registerAutocompleteListener(async (query, args) => {
-                return this._onGetSceneAutcomplete(args)
+                return this._onGetSceneAutocomplete(args)
             });
 
     }
 
-    _onGetSceneAutcomplete = function(args) {
+    _onGetSceneAutocomplete(args) {
 
         var me = this;
 
@@ -143,7 +144,7 @@ class HomeWizardDriver extends Homey.Driver {
                     });
                 }
 
-                me.log('_onGetSceneAutcomplete result', arrayAutocomplete);
+                me.log('_onGetSceneAutocomplete result', arrayAutocomplete);
 
                 return resolve(arrayAutocomplete);
             });
@@ -169,12 +170,30 @@ class HomeWizardDriver extends Homey.Driver {
             console.log('View: ' + viewId);
         });
 
-        socket.on('manual_add', function (device, callback) {
+        socket.on('manual_add', async function (device, callback) {
 
-            var url = 'http://' + device.settings.homewizard_ip + '/' + device.settings.homewizard_pass + '/get-status/';
+            var url = 'http://' + device.settings.homewizard_ip + '/' + device.settings.homewizard_pass + '/get-sensors/';
+
+            const json = await fetch(url).then(res => res.json())
 
             console.log('Calling '+ url);
 
+            if (json.status == 'ok') {
+              console.log('Call OK');
+
+              devices[device.data.id] = {
+                  id: device.data.id,
+                  name: device.name,
+                  settings: device.settings,
+                  capabilities: device.capabilities
+              };
+              homewizard.setDevices(devices);
+
+              callback( null, devices );
+              socket.emit("success", device);
+
+            }
+/*
             request(url, function (error, response, body) {
                 if (response === null || response === undefined) {
                             socket.emit("error", "http error");
@@ -199,6 +218,7 @@ class HomeWizardDriver extends Homey.Driver {
                     }
                 }
             });
+  */
         });
 
         socket.on('disconnect', () => {

@@ -8,17 +8,18 @@ const driver = ManagerDrivers.getDriver('thermometer');
 var refreshIntervalId;
 var devices = {};
 const thermometers = {};
+var debug = false;
 
 class HomeWizardThermometer extends Homey.Device {
 
 	onInit() {
 
-		this.log('HomeWizard Thermometer '+this.getName() +' has been inited');
+		if (debug) {console.log('HomeWizard Thermometer '+this.getName() +' has been inited');}
 
 		const devices = driver.getDevices();
 
 		devices.forEach(function initdevice(device) {
-			console.log('add device: ' + JSON.stringify(device.getName()));
+			if (debug) {console.log('add device: ' + JSON.stringify(device.getName()));}
 
 			devices[device.getData().id] = device;
 			devices[device.getData().id].settings = device.getSettings();
@@ -40,7 +41,7 @@ class HomeWizardThermometer extends Homey.Device {
 
 		// Start polling for thermometer
 		refreshIntervalId = setInterval(function () {
-			console.log("--Start Thermometer Polling-- ");
+			if (debug) {console.log("--Start Thermometer Polling-- ");}
 
 			me.getStatus(devices);
 
@@ -49,8 +50,9 @@ class HomeWizardThermometer extends Homey.Device {
 	}
 
 	getStatus(devices) {
-		console.log('Start Polling');
+		if (debug) {console.log('Start Polling');}
 		var me = this;
+		var lowBattery_status = null;
 
 		for (var index in devices) {
 
@@ -60,22 +62,48 @@ class HomeWizardThermometer extends Homey.Device {
 				homewizard.getDeviceData(homewizard_id, 'thermometers', function(result) {
 					if (Object.keys(result).length > 0) {
 						try {
-							for (var index in result) {
+							for (var index2 in result) {
 
-								if (result[index].id == thermometer_id) {
-									var te = (result[index].te.toFixed(1) * 2) / 2;
-									var hu = (result[index].hu.toFixed(1) * 2) / 2;
+								if (result[index2].id == thermometer_id && result[index2].te != undefined && result[index2].hu != undefined) {
+									var te = (result[index2].te.toFixed(1) * 2) / 2;
+									var hu = (result[index2].hu.toFixed(1) * 2) / 2;
 
 									//Check current temperature
 									if (devices[index].getCapabilityValue('measure_temperature') != te) {
-										console.log("New TE - "+ te);
+										if (debug) {console.log("New TE - "+ te);}
 										devices[index].setCapabilityValue('measure_temperature', te);
 									}
 
 									//Check current temperature
 									if (devices[index].getCapabilityValue('measure_humidity') != hu) {
-										console.log("New HU - "+ hu);
+										if (debug) {console.log("New HU - "+ hu);}
 										devices[index].setCapabilityValue('measure_humidity', hu);
+									}
+									// console.log(result[index2].lowBattery);
+									try {
+										if (result[index2].lowBattery != undefined && result[index2].lowBattery != null) {
+												//console.log(result[index2].lowBattery);
+												if (!devices[index].hasCapability('alarm_battery')) {
+													devices[index].addCapability('alarm_battery');
+												}
+												var lowBattery_temp = result[index2].lowBattery;
+												if (lowBattery_temp == 'yes') {
+														lowBattery_status = true }
+												else {
+														lowBattery_status = false;
+											 }
+											 if (devices[index].getCapabilityValue('alarm_battery') != lowBattery_status) {
+													if (debug) {console.log("New status - "+ lowBattery_status);}
+													devices[index].setCapabilityValue('alarm_battery', lowBattery_status);
+											}
+										}
+										else {
+											if (devices[index].hasCapability('alarm_battery')) {
+												devices[index].removeCapability('alarm_battery');
+											}
+										}
+									} catch (e) {
+										console.log(e)
 									}
 								}
 							}
@@ -93,10 +121,10 @@ class HomeWizardThermometer extends Homey.Device {
 
 		if (Object.keys(devices).length === 0) {
 			clearInterval(refreshIntervalId);
-			Homey.log("--Stopped Polling--");
+			if (debug) {console.log("--Stopped Polling--");}
 		}
 
-		this.log('deleted: ' + JSON.stringify(this));
+		console.log('deleted: ' + JSON.stringify(this));
 	}
 
 }

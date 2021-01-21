@@ -3,7 +3,7 @@
   "name": {
     "en": "HomeWizard"
   },
-  "version": "0.3.0",
+  "version": "1.1.16",
   "sdk": 2,
   "compatibility": ">=1.5",
   "description": {
@@ -145,6 +145,35 @@
         ]
       },
       {
+        "id": "power_s2_changed",
+        "title": {
+          "en": "Power usage S2 changed",
+          "nl": "Huidige gebruik S2 veranderd"
+        },
+        "args": [
+          {
+            "name": "Energylink",
+            "type": "device",
+            "filter": "driver_id=energylink",
+            "placeholder": {
+              "en": "Which energylink",
+              "nl": "Welke energylink"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power_s2",
+            "type": "number",
+            "title": {
+              "en": "Watt",
+              "nl": "Watt"
+            },
+            "example": 15
+          }
+        ]
+      },
+      {
         "id": "power_netto_changed",
         "title": {
           "en": "Daily netto usage changed",
@@ -251,6 +280,35 @@
         "tokens": [
           {
             "name": "power_daytotal_s1",
+            "type": "number",
+            "title": {
+              "en": "kWh",
+              "nl": "kWh"
+            },
+            "example": 1
+          }
+        ]
+      },
+      {
+        "id": "meter_power_s2_changed",
+        "title": {
+          "en": "Daily usage S2 changed",
+          "nl": "Dag gebruik S2 veranderd"
+        },
+        "args": [
+          {
+            "name": "Energylink",
+            "type": "device",
+            "filter": "driver_id=energylink",
+            "placeholder": {
+              "en": "Which energylink",
+              "nl": "Welke energylink"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power_daytotal_s2",
             "type": "number",
             "title": {
               "en": "kWh",
@@ -561,6 +619,10 @@
         "measure_power.used",
         "measure_power.netto",
         "measure_power.s1",
+        "measure_power.s1other",
+        "meter_power.s1other",
+        "measure_power.s2other",
+        "meter_power.s2other",
         "meter_gas.today",
         "meter_gas.reading",
         "meter_water",
@@ -592,10 +654,34 @@
             "nl": "Dag opbrengst"
           }
         },
+        "measure_power.s1other": {
+          "title": {
+            "en": "Power current S1",
+            "nl": "Huidig vermogen S1"
+          }
+        },
+        "meter_power.s1other": {
+          "title": {
+            "en": "Day usage S1",
+            "nl": "Dag gebruik S1"
+          }
+        },
         "measure_power.used": {
           "title": {
             "en": "Power current",
             "nl": "Huidig vermogen"
+          }
+        },
+        "measure_power.s2other": {
+          "title": {
+            "en": "Power current S2",
+            "nl": "Huidig vermogen S2"
+          }
+        },
+        "meter_power.s2other": {
+          "title": {
+            "en": "Day usage S2",
+            "nl": "Dag gebruik S2"
           }
         },
         "measure_power.netto": {
@@ -619,7 +705,7 @@
         "meter_gas.reading": {
           "title": {
             "en": "Meter reading gas",
-            "nl": "Stand Gas"
+            "nl": "Meterstand Gas"
           }
         },
         "meter_water": {
@@ -657,6 +743,12 @@
             "en": "Meter reading produced normal",
             "nl": "Stand terug levering normaal"
           }
+        },
+        "meter_power": {
+          "title": {
+            "en": "Aggregated meter",
+            "nl": "Geaggregeerde meterstand"
+          }
         }
       },
       "pair": [
@@ -691,6 +783,9 @@
         "measure_temperature",
         "measure_humidity"
       ],
+      "energy": {
+        "batteries": [ "AA", "AA" ]
+      },
       "pair": [
         {
           "id": "start"
@@ -709,34 +804,17 @@
       ]
     },
     {
-      "id": "wattcher",
+      "id": "kakusensors",
       "name": {
-        "en": "Wattcher",
-        "nl": "Wattcher"
+        "en": "Smoke, Motion and door senors",
+        "nl": "Rook, beweging en deur sensors"
       },
       "images": {
-        "large": "drivers/wattcher/assets/images/large.jpg",
-        "small": "drivers/wattcher/assets/images/small.jpg"
+        "large": "drivers/kakusensors/assets/images/large.jpg",
+        "small": "drivers/kakusensors/assets/images/small.jpg"
       },
       "class": "sensor",
-      "capabilities": [
-        "measure_power",
-        "meter_power"
-      ],
-      "capabilitiesOptions": {
-        "meter_power": {
-          "title": {
-            "en": "Day usage",
-            "nl": "Dag totaal"
-          }
-        },
-        "measure_power": {
-          "title": {
-            "en": "Power current",
-            "nl": "Huidig vermogen"
-          }
-        }
-      },
+      "capabilities": [],
       "pair": [
         {
           "id": "start"

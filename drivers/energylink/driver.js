@@ -1,7 +1,6 @@
 'use strict';
 
 const Homey = require('homey');
-const request = require('request');
 
 const { ManagerDrivers } = require('homey');
 const driver = ManagerDrivers.getDriver('homewizard');
@@ -13,7 +12,7 @@ var devices = {};
 class HomeWizardEnergyLink extends Homey.Driver {
 
     onInit() {
-        this.log('HomeWizard EnergyLink has been inited');
+        console.log('HomeWizard EnergyLink has been inited');
     }
 
     onPair(socket) {

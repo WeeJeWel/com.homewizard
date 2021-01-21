@@ -1,8 +1,11 @@
 'use strict';
 
-var request = require('request');
+const fetch = require('node-fetch');
+const AbortController = require('abort-controller');
 
 const Homey = require('homey');
+
+var debug = false;
 
 module.exports = (function(){
    var homewizard = {};
@@ -23,12 +26,15 @@ module.exports = (function(){
       ],
       "weatherdisplays":[],
       "energymeters": [],
-      "energylinks": [
-         {"id":0,"favorite":"no","name":"EnergyLink","code":"942991","t1":"solar","c1":1000,"t2":"water","c2":1,"tariff":1,"s1":{"po":0,"dayTotal":10.24,"po+":2498,"po+t":"11:22","po-":0,"po-t":"00:01"},"s2":{"po":4,"dayTotal":162.00,"po+":7,"po+t":"08:49","po-":0,"po-t":"00:01"},"aggregate":{"po":511,"dayTotal":-3.19,"po+":2873,"po+t":"09:22","po-":-1857,"po-t":"11:55"},"used":{"po":511,"dayTotal":7.04,"po+":3791,"po+t":"11:45","po-":204,"po-t":"16:34"},"gas":{"lastHour":0.44,"dayTotal":4.07},"kwhindex":2.87,"wp":3570}
-      ],
+      //"energylinks": [
+      //   {"id":0,"favorite":"no","name":"EnergyLink","code":"942991","t1":"solar","c1":1000,"t2":"water","c2":1,"tariff":1,"s1":{"po":0,"dayTotal":10.24,"po+":2498,"po+t":"11:22","po-":0,"po-t":"00:01"},"s2":{"po":4,"dayTotal":162.00,"po+":7,"po+t":"08:49","po-":0,"po-t":"00:01"},"aggregate":{"po":511,"dayTotal":-3.19,"po+":2873,"po+t":"09:22","po-":-1857,"po-t":"11:55"},"used":{"po":511,"dayTotal":7.04,"po+":3791,"po+t":"11:45","po-":204,"po-t":"16:34"},"gas":{"lastHour":0.44,"dayTotal":4.07},"kwhindex":2.87,"wp":3570}
+      //],
+      "energylinks": [{"id":0,"favorite":"no","name":"EnergyLink","code":"485352","t1":"other","c1":2000,"t2":"other","c2":2000,"tariff":1,"s1":{"po":181,"dayTotal":0.18,"po+":347,"po+t":"00:56","po-":57,"po-t":"00:07"},"s2":{"po":93,"dayTotal":0.20,"po+":1617,"po+t":"00:38","po-":90,"po-t":"00:02"},"aggregate":{"po":413,"dayTotal":0.52,"po+":996,"po+t":"01:04","po-":180,"po-t":"00:06"},"used":{"po":413,"dayTotal":0.52,"po+":996,"po+t":"01:04","po-":180,"po-t":"00:06"},"gas":{"lastHour":0.03,"dayTotal":0.03},"kwhindex":0.00,"wp":0}],
       "heatlinks": [{"id": 0, "favorite": "no", "name": "HeatLink", "code": "384699", "pump": "on", "heating": "off", "dhw": "off", "rte": 19.1, "rsp": 20.000, "tte": 0.000, "ttm": null, "wp": 1.628, "wte": 52.988, "ofc": 0, "odc": 0, "presets": [{ "id": 0, "te": 20.00},{ "id": 1, "te": 15.00},{ "id": 2, "te": 21.00},{ "id": 3, "te": 12.00}]}],
-      "hues": []};
-      
+      "hues": [],
+      "kakusensors": [{"id":0,"name":"Beweging","status":"no","type":"motion","favorite":"no","timestamp":"13:56","cameraid":null},{"id":1,"name":"Kantoor","status":"yes","type":"motion","favorite":"no","timestamp":"14:43","cameraid":null},{"id":5,"name":"Rookmelder Keuken","status":"no","type":"smoke868","favorite":"no","timestamp":"09:35","cameraid":null,"lowBattery":"no","lastSeen":"2020-08-19 09:35:14"}],
+    };
+
    homewizard.debug = false;
    homewizard.debug_devices = [];
    homewizard.debug_devices.HW12345 = {
@@ -41,12 +47,12 @@ module.exports = (function(){
       }
    };
    homewizard.debug_devices_data =  [ { id: 'HW12345' }];
-   
+
    homewizard.setDevices = function(devices){
       if (homewizard.debug) {
          self.devices = homewizard.debug_devices;
       } else {
-         self.devices = devices;  
+         self.devices = devices;
       }
    };
 
@@ -55,89 +61,92 @@ module.exports = (function(){
    }
 
    homewizard.getDevices = function(callback) {
-      callback(self.devices); 
+      callback(self.devices);
    };
-   
+
    homewizard.getDeviceData = function(device_id, data_part, callback) {
 
       if (typeof self.devices[device_id] === 'undefined' || typeof self.devices[device_id].polldata === 'undefined' || typeof self.devices[device_id].polldata[data_part] === 'undefined') {
          callback([]);
       } else {
-         callback(self.devices[device_id].polldata[data_part]);   
+         callback(self.devices[device_id].polldata[data_part]);
       }
    };
-   
-   homewizard.call = function(device_id, uri_part, callback) {
 
+  async function fetchWithTimeout(resource, options) {
+    const { timeout = 8000 } = options;
+
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    const response = await fetch(resource, {
+      ...options,
+    signal: controller.signal
+    });
+    clearTimeout(id);
+
+  return response;
+  }
+
+   homewizard.call = async function(device_id, uri_part, callback) {
          var me = this;
-         console.log('Call device ' + device_id);
+         let status;
+         if (debug) {console.log('Call device ' + device_id);}
          if ((typeof self.devices[device_id] !== 'undefined') && ("settings" in self.devices[device_id]) && ("homewizard_ip" in self.devices[device_id].settings) && ("homewizard_pass" in self.devices[device_id].settings)) {
             var homewizard_ip = self.devices[device_id].settings.homewizard_ip;
             var homewizard_pass = self.devices[device_id].settings.homewizard_pass;
-            request({
-               uri: 'http://' + homewizard_ip + '/' + homewizard_pass + uri_part,
-               method: "GET",
-               timeout: 20000,
-             }, function (error, response, body) {
-               if (response === null || response === undefined) {
-                   callback('No response', []);
-                   return;
-               }
-               if (!error && response.statusCode == 200) {
-                  var jsonObject;
-                  try {
-                     jsonObject = JSON.parse(body);
+            //const json = await fetch('http://' + homewizard_ip + '/' + homewizard_pass + uri_part)
+            const json = await fetchWithTimeout('http://' + homewizard_ip + '/' + homewizard_pass + uri_part, {
+              timeout: 5000
+            })
+            .then(async(res) => {
+              try {
+              status = res.status;
+              return await res.json();
+            } catch (err) {
+               console.error(err);
+            }
+            })
+            .then((jsonData) => {
 
-                     if (jsonObject.status == 'ok') {
-                        if(typeof callback === 'function') {
-                            callback(null, jsonObject.response);
-                        } else {
-                            console.log('Not typeoffunction');
-                        }
-                     }
-                  } catch (exception) {
-                      console.log(exception);
-                     console.log('EXCEPTION JSON : '+ body);
-                     jsonObject = null;
-                     callback('Invalid data', []);
-                  }
-               } else {
-                  if(typeof callback === 'function') {
-                    callback('Error', []);
-                  }
-                  console.log('Error: '+error);
-               }
-           });
+              if (status == 200) {
+                 try {
+                    if (jsonData.status == 'ok') {
+                       if(typeof callback === 'function') {
+                           callback(null, jsonData.response);
+                       } else {
+                           console.log('Not typeoffunction');
+                       }
+                    }
+                 } catch (exception) {
+                     console.log(exception);
+                    console.log('EXCEPTION JSON : '+ body);
+                    jsonObject = null;
+                    callback('Invalid data', []);
+                 }
+              } else {
+                 if(typeof callback === 'function') {
+                   callback('Error', []);
+                 }
+                 console.log('Error: no clue what is going on here.');
+              }
+            })
+
+            .catch((err) => {
+              console.error(err);
+            });
+
          } else {
-            me.log('Homewizard '+ device_id +': settings not found!');
+            console.log('Homewizard '+ device_id +': settings not found!');
          }
 
    };
-   
-   // homewizard.getScenes = function(args, callback) {
-   //
-	//   this.call(args.device.getData().id, '/gplist', function(err, response) {
-   //
-	//       console.log('Call GetScenes');
-   //
-   //        var arrayAutocomplete = [];
-   //
-   //        for (var i = 0, len = response.length; i < len; i++) {
-   //              arrayAutocomplete.push({
-   //                  id: response[i].id,
-   //                  name: response[i].name
-   //              });
-   //        }
-   //
-   //        return arrayAutocomplete;
-   //    });
-   // };
-   
+
    homewizard.ledring_pulse = function(device_id, colorName) {
       var homewizard_ledring =  self.devices[device_id].settings.homewizard_ledring;
       if (homewizard_ledring) {
         Homey.manager('ledring').animate(
-            'pulse', // animation name (choose from loading, pulse, progress, solid) 
+            'pulse', // animation name (choose from loading, pulse, progress, solid)
             {
                 color: colorName,
             },
@@ -145,19 +154,19 @@ module.exports = (function(){
             3000, // duration
             function(err, success) { // callback
                 if(err) return Homey.error(err);
-                Homey.log("Ledring pulsing "+colorName);
+                console.log("Ledring pulsing "+colorName);
             }
         );
       }
    };
-   
+
    homewizard.startpoll = function() {
          homewizard.poll();
          self.polls.device_id = setInterval(function () {
             homewizard.poll();
          }, 1000 * 10);
    };
-   
+
    homewizard.poll = function() {
 
       if (homewizard.debug) {
@@ -172,6 +181,7 @@ module.exports = (function(){
          self.devices['HW12345'].polldata.thermometers = response.thermometers;
          self.devices['HW12345'].polldata.rainmeters = response.rainmeters;
          self.devices['HW12345'].polldata.windmeters = response.windmeters;
+         self.devices['HW12345'].polldata.kakusensors = response.kakusensors;
 
       } else {
          Object.keys(self.devices).forEach(function (device_id) {
@@ -187,13 +197,14 @@ module.exports = (function(){
                   self.devices[device_id].polldata.thermometers = response.thermometers;
                   self.devices[device_id].polldata.rainmeters = response.rainmeters;
                   self.devices[device_id].polldata.windmeters = response.windmeters;
+                  self.devices[device_id].polldata.kakusensors = response.kakusensors;
 
                   if (Object.keys(response.energylinks).length !== 0) {
 
                      homewizard.call(device_id, '/el/get/0/readings', function(err, response2) {
                         if(err == null) {
                            self.devices[device_id].polldata.energylink_el = response2;
-                           console.log('HW-Data polled for slimme meter: '+device_id);
+                           if (debug) {console.log('HW-Data polled for slimme meter: '+device_id);}
                         }
                      });
                   }
@@ -204,6 +215,6 @@ module.exports = (function(){
       }
 
    };
-   
+
    return homewizard;
 })();

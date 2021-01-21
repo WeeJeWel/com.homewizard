@@ -13,7 +13,7 @@ class HomeWizardHeatlink extends Homey.Device {
 
 	onInit() {
 
-		this.log('HomeWizard Heatlink '+this.getName() +' has been inited');
+		console.log('HomeWizard Heatlink '+this.getName() +' has been inited');
 
 		const devices = driver.getDevices();
 		devices.forEach(function initdevice(device) {
@@ -38,39 +38,22 @@ class HomeWizardHeatlink extends Homey.Device {
 				temperature = 35;
 			}
 			temperature = Math.round(temperature.toFixed(1) * 2) / 2;
-			var url = '/hl/0/settarget/'+temperature;
-			console.log(url);
-			var homewizard_id = this.getSetting('homewizard_id');
-			homewizard.call(homewizard_id, '/hl/0/settarget/'+temperature, function(err, response) {
-				console.log(err);
-				if (response) callback(err, temperature);
-			});
 
+			return new Promise((resolve, reject) => {
+					var url = '/hl/0/settarget/'+temperature;
+					console.log(url); // Console log url
+					var homewizard_id = this.getSetting('homewizard_id');
+			    homewizard.call(homewizard_id, '/hl/0/settarget/'+temperature, function(err, response) {
+						if (err) {
+							console.log('ERR settarget target_temperature -> returned false');
+							return resolve(false);
+						}
+						console.log('settarget target_temperature - returned true');
+						return resolve(true);
+				});
+			});
 			return Promise.resolve();
 		});
-
-	}
-
-	setTargetTemparature(temparature) {
-        // Catch faulty trigger and max/min temp
-        if (!temperature) {
-          callback(true, temperature);
-          return false;
-        }
-        else if (temperature < 5) {
-          temperature = 5;
-        }
-        else if (temperature > 35) {
-          temperature = 35;
-        }
-        temperature = Math.round(temperature.toFixed(1) * 2) / 2;
-        var url = '/hl/0/settarget/'+temperature;
-        console.log(url);
-        var homewizard_id = this.getSetting('homewizard_id');
-        homewizard.call(homewizard_id, '/hl/0/settarget/'+temperature, function(err, response) {
-            console.log(err);
-            if (callback) callback(err, temperature);
-        });
 	}
 
 	startPolling() {
@@ -107,7 +90,7 @@ class HomeWizardHeatlink extends Homey.Device {
 				if (Object.keys(callback).length > 0) {
 
 					try {
-
+						me.setAvailable();
 						var rte = (callback[0].rte.toFixed(1) * 2) / 2;
                 		var rsp = (callback[0].rsp.toFixed(1) * 2) / 2;
                 		var tte = (callback[0].tte.toFixed(1) * 2) / 2;
@@ -146,6 +129,7 @@ class HomeWizardHeatlink extends Homey.Device {
 						}
 					} catch (err) {
 						console.log ("Heatlink data corrupt", err);
+						me.setUnavailable();
 					}
 				} else {
 					me.log('No data');
@@ -163,7 +147,7 @@ class HomeWizardHeatlink extends Homey.Device {
 			console.log("--Stopped Polling--");
 		}
 
-		this.log('deleted: ' + JSON.stringify(this));
+		console.log('deleted: ' + JSON.stringify(this));
 	}
 
 }

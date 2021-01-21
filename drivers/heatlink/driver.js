@@ -1,7 +1,7 @@
 'use strict';
 
 const Homey = require('homey');
-const request = require('request');
+//const request = require('request');
 
 const { ManagerDrivers } = require('homey');
 const driver = ManagerDrivers.getDriver('homewizard');
@@ -12,7 +12,7 @@ var homewizard_devices;
 class HomeWizardHeatlink extends Homey.Driver {
 
     onInit() {
-        this.log('HomeWizard Heatlink has been inited');
+        console.log('HomeWizard Heatlink has been inited');
 
         new Homey.FlowCardAction('heatlink_off')
             .register()
@@ -23,13 +23,13 @@ class HomeWizardHeatlink extends Homey.Driver {
 
                 return new Promise((resolve, reject) => {
 
-                    homewizard.call(args.device.id, '/hl/0/settarget/0', function(err, response) {
+                    homewizard.call(args.device.getData().id, '/hl/0/settarget/0', function(err, response) {
                         if(err) {
-                            me.log('ERR flowCardAction heatlink_off  -> returned false');
+                            console.log('ERR flowCardAction heatlink_off  -> returned false');
                             return resolve(false);
                         }
 
-                        me.log('flowCardAction heatlink_off  -> returned true');
+                        console.log('flowCardAction heatlink_off  -> returned true');
                         return resolve(true);
                     });
 
@@ -109,7 +109,7 @@ module.exports = HomeWizardHeatlink;
 //
 // // SETTINGS
 // module.exports.settings = function( device_data, newSettingsObj, oldSettingsObj, changedKeysArr, callback ) {
-//     Homey.log ('Changed settings: ' + JSON.stringify(device_data) + ' / ' + JSON.stringify(newSettingsObj) + ' / old = ' + JSON.stringify(oldSettingsObj));
+//     console.log ('Changed settings: ' + JSON.stringify(device_data) + ' / ' + JSON.stringify(newSettingsObj) + ' / old = ' + JSON.stringify(oldSettingsObj));
 //     try {
 // 	    changedKeysArr.forEach(function (key) {
 // 		    devices[device_data.id].settings[key] = newSettingsObj[key];
@@ -125,9 +125,9 @@ module.exports = HomeWizardHeatlink;
 //     delete devices[device_data.id];
 //     if (Object.keys(devices).length === 0) {
 //         clearInterval(refreshIntervalId);
-//         Homey.log("--Stopped Polling--");
+//         console.log("--Stopped Polling--");
 //     }
-//     Homey.log('deleted: ' + JSON.stringify(device_data));
+//     console.log('deleted: ' + JSON.stringify(device_data));
 // };
 //
 //
@@ -187,7 +187,7 @@ module.exports = HomeWizardHeatlink;
 // Homey.manager('flow').on('action.heatlink_off', function( callback, args ){
 //     homewizard.call(args.device.id, '/hl/0/settarget/0', function(err, response) {
 //       if (err === null) {
-//         Homey.log('Heatlink Off');
+//         console.log('Heatlink Off');
 //         callback( null, true );
 //       } else {
 //         callback(err, false); // err
@@ -243,7 +243,7 @@ module.exports = HomeWizardHeatlink;
 //             }
 //         });
 //     } else {
-//         Homey.log('Removed Heatlink '+ device_id +' (old settings)');
+//         console.log('Removed Heatlink '+ device_id +' (old settings)');
 //         module.exports.setUnavailable({id: device_id}, "No Heatlink found" );
 //         // Only clear interval when the unavailable device is the only device on this driver
 //         // This will prevent stopping the polling when a user has 1 device with old settings and 1 with new
@@ -259,7 +259,7 @@ module.exports = HomeWizardHeatlink;
 // 		     clearInterval(refreshIntervalId);
 // 	   }
 //      refreshIntervalId = setInterval(function () {
-//          Homey.log("--Start Heatlink Polling-- ");
+//          console.log("--Start Heatlink Polling-- ");
 //          Object.keys(devices).forEach(function (device_id) {
 //              getStatus(device_id);
 //          });

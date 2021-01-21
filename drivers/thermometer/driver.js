@@ -1,7 +1,7 @@
 'use strict';
 
 const Homey = require('homey');
-const request = require('request');
+//const request = require('request');
 
 
 const { ManagerDrivers } = require('homey');
@@ -14,7 +14,7 @@ var homewizard_devices;
 class HomeWizardThermometer extends Homey.Driver {
 
     onInit() {
-        this.log('HomeWizard Thermometer has been inited');
+        console.log('HomeWizard Thermometer has been inited');
     }
 
     onPair(socket) {
